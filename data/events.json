@@ -1,0 +1,38 @@
+[
+  {
+    "id": "rose_festival",
+    "name": "Rose Festival",
+    "start": "2024-07-01T00:00:00Z",
+    "end": "2024-07-07T23:59:59Z",
+    "rewards": [
+      { "item_id": "rose", "quantity": 5 }
+    ],
+    "quests": [
+      { "id": "send_50_messages", "description": "Send 50 messages", "target": 50, "stat": "messages" }
+    ]
+  },
+  {
+    "id": "level_rush",
+    "name": "Level Rush",
+    "start": "2024-07-10T00:00:00Z",
+    "end": "2024-07-15T23:59:59Z",
+    "rewards": [
+      { "item_id": "vip-token", "quantity": 1 }
+    ],
+    "quests": [
+      { "id": "earn_500_xp", "description": "Earn 500 XP", "target": 500, "stat": "xp" }
+    ]
+  },
+  {
+    "id": "emote_master",
+    "name": "Emote Master",
+    "start": "2024-07-20T00:00:00Z",
+    "end": "2024-07-25T23:59:59Z",
+    "rewards": [
+      { "item_id": "xp-book", "quantity": 1 }
+    ],
+    "quests": [
+      { "id": "loop_10_emotes", "description": "Loop 10 emotes", "target": 10, "stat": "emote_loops" }
+    ]
+  }
+]
