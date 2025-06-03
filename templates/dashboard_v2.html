@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" x-data="dashboard()" x-init="init()">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard v2</title>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; }
+        .sidebar { width: 200px; background: #111; color: white; height: 100vh; position: fixed; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li { padding: 15px; cursor: pointer; }
+        .sidebar li.active, .sidebar li:hover { background: #333; }
+        .content { margin-left: 200px; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+        th { background: #eee; }
+        .no-access { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <ul>
+            <li :class="{ 'active': currentTab === 'overview' }" @click="currentTab = 'overview'">Overview</li>
+            <li :class="{ 'active': currentTab === 'users' }" @click="currentTab = 'users'">Users</li>
+            <li :class="{ 'active': currentTab === 'achievements' }" @click="currentTab = 'achievements'">Achievements</li>
+            <li :class="{ 'active': currentTab === 'leaderboard' }" @click="currentTab = 'leaderboard'">Leaderboard</li>
+            <li :class="{ 'active': currentTab === 'commands' }" @click="currentTab = 'commands'">Commands</li>
+            <li :class="{ 'active': currentTab === 'modlogs' }" @click="currentTab = 'modlogs'">Mod Logs</li>
+        </ul>
+    </div>
+    <div class="content">
+        <template x-if="currentTab === 'overview'">
+            <div><h2>Overview</h2><p>Dashboard overview content here.</p></div>
+        </template>
+        <template x-if="currentTab === 'users'">
+            <div>
+                <h2>Users</h2>
+                <table class="min-w-full border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border px-4 py-2 text-left">User ID</th>
+                            <th class="border px-4 py-2 text-left">Name</th>
+                            <th class="border px-4 py-2 text-left">Role</th>
+                            <th class="border px-4 py-2 text-left">Level</th>
+                            <th class="border px-4 py-2 text-left">XP</th>
+                            <th class="border px-4 py-2 text-left">Messages</th>
+                            <th class="border px-4 py-2 text-left">Time Spent</th>
+                            <th class="border px-4 py-2 text-left">Achievements</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="user in users" :key="user.user_id">
+                            <tr>
+                                <td class="border px-4 py-2" x-text="user.user_id"></td>
+                                <td class="border px-4 py-2" x-text="user.name"></td>
+                                <td class="border px-4 py-2" x-text="user.role"></td>
+                                <td class="border px-4 py-2" x-text="user.level"></td>
+                                <td class="border px-4 py-2">
+                                    <div class="w-24 bg-gray-200 rounded h-4 relative">
+                                        <div class="bg-blue-500 h-4 rounded" :style="`width: ${xpProgress(user)}%`"></div>
+                                    </div>
+                                    <div class="text-xs text-center" x-text="user.xp + ' XP'"></div>
+                                </td>
+                                <td class="border px-4 py-2" x-text="user.messages"></td>
+                                <td class="border px-4 py-2" x-text="formatTimeSpent(user.time_spent)"></td>
+                                <td class="border px-4 py-2">
+                                    <template x-for="ach in user.achievements" :key="ach">
+                                        <span class="inline-block bg-yellow-200 text-yellow-800 px-2 py-1 rounded mr-1 text-xs" x-text="ach"></span>
+                                    </template>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+        <template x-if="currentTab === 'commands'">
+            <div><h2>Commands</h2><p>Commands content here.</p></div>
+        </template>
+        <template x-if="currentTab === 'modlogs'">
+            <div>
+                <h2>Moderation Logs</h2>
+                <template x-if="!isAuthorized">
+                    <p class="no-access">No access. You must be an admin or owner to view this panel.</p>
+                </template>
+                <template x-if="isAuthorized">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Target</th>
+                                <th>By</th>
+                                <th>Reason</th>
+                                <th>Duration</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="log in modlogs" :key="log.time">
+                                <tr>
+                                    <td x-text="log.action"></td>
+                                    <td x-text="log.target"></td>
+                                    <td x-text="log.by"></td>
+                                    <td x-text="log.reason || ''"></td>
+                                    <td x-text="log.duration !== null ? log.duration + ' min' : ''"></td>
+                                    <td x-text="formatTimestamp(log.time)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+            </div>
+        </template>
+        <template x-if="currentTab === 'leaderboard'">
+            <div>
+                <h2>Leaderboard</h2>
+                <table class="min-w-full border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border px-4 py-2 text-left cursor-pointer" @click="sortLeaderboard('name')">Name</th>
+                            <th class="border px-4 py-2 text-left cursor-pointer" @click="sortLeaderboard('xp')">XP</th>
+                            <th class="border px-4 py-2 text-left cursor-pointer" @click="sortLeaderboard('level')">Level</th>
+                            <th class="border px-4 py-2 text-left cursor-pointer" @click="sortLeaderboard('coins')">Coins</th>
+                            <th class="border px-4 py-2 text-left cursor-pointer" @click="sortLeaderboard('achievements_count')">Achievements</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="user in sortedLeaderboard" :key="user.user_id">
+                            <tr>
+                                <td class="border px-4 py-2" x-text="user.name"></td>
+                                <td class="border px-4 py-2" x-text="user.xp"></td>
+                                <td class="border px-4 py-2" x-text="user.level"></td>
+                                <td class="border px-4 py-2" x-text="user.coins"></td>
+                                <td class="border px-4 py-2" x-text="user.achievements_count"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        function dashboard() {
+            return {
+                currentTab: 'overview',
+                modlogs: [],
+                users: [],
+                achievements: [],
+                leaderboard: [],
+                isAuthorized: false,
+                sortKey: 'xp',
+                sortAsc: false,
+                sortedLeaderboard() {
+                    return this.leaderboard.slice().sort((a, b) => {
+                        let res = 0;
+                        if (a[this.sortKey] < b[this.sortKey]) res = -1;
+                        if (a[this.sortKey] > b[this.sortKey]) res = 1;
+                        return this.sortAsc ? res : -res;
+                    });
+                },
+                init() {
+                    // For demo, assume user role is admin or owner
+                    // In real app, fetch user role from server or session
+                    this.isAuthorized = true;
+                    this.fetchModlogs();
+                    this.fetchUsers();
+                    this.fetchAchievements();
+                    this.fetchLeaderboard();
+                    setInterval(() => {
+                        if (this.currentTab === 'modlogs') {
+                            this.fetchModlogs();
+                        }
+                        if (this.currentTab === 'users') {
+                            this.fetchUsers();
+                        }
+                        if (this.currentTab === 'achievements') {
+                            this.fetchAchievements();
+                        }
+                        if (this.currentTab === 'leaderboard') {
+                            this.fetchLeaderboard();
+                        }
+                    }, 30000);
+                },
+                fetchModlogs() {
+                    fetch('/modlogs?limit=50')
+                        .then(res => {
+                            if (res.status === 403) {
+                                this.isAuthorized = false;
+                                this.modlogs = [];
+                                return;
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data) {
+                                this.modlogs = data;
+                            }
+                        })
+                        .catch(() => {
+                            this.modlogs = [];
+                        });
+                },
+                fetchUsers() {
+                    fetch('/users')
+                        .then(res => {
+                            if (res.status === 403) {
+                                this.isAuthorized = false;
+                                this.users = [];
+                                return;
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data) {
+                                this.users = data;
+                            }
+                        })
+                        .catch(() => {
+                            this.users = [];
+                        });
+                },
+                fetchAchievements() {
+                    fetch('/achievements')
+                        .then(res => {
+                            if (res.status === 403) {
+                                this.isAuthorized = false;
+                                this.achievements = [];
+                                return;
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data) {
+                                this.achievements = data;
+                            }
+                        })
+                        .catch(() => {
+                            this.achievements = [];
+                        });
+                },
+                fetchLeaderboard() {
+                    fetch('/leaderboard')
+                        .then(res => {
+                            if (res.status === 403) {
+                                this.isAuthorized = false;
+                                this.leaderboard = [];
+                                return;
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data) {
+                                this.leaderboard = data;
+                            }
+                        })
+                        .catch(() => {
+                            this.leaderboard = [];
+                        });
+                },
+                xpProgress(user) {
+                    const level = user.level || 1;
+                    const xp = user.xp || 0;
+                    const xpForCurrentLevel = level * 100;
+                    const xpForNextLevel = (level + 1) * 100;
+                    const progress = ((xp - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel)) * 100;
+                    return Math.min(Math.max(progress, 0), 100);
+                },
+                formatTimeSpent(minutes) {
+                    if (!minutes || minutes <= 0) return '0m';
+                    if (minutes < 60) return minutes + 'm';
+                    const hours = Math.floor(minutes / 60);
+                    const mins = minutes % 60;
+                    return hours + 'h ' + mins + 'm';
+                },
+                formatTimestamp(ts) {
+                    if (!ts) return '';
+                    const d = new Date(ts);
+                    return d.toLocaleString();
+                },
+                sortLeaderboard(key) {
+                    if (this.sortKey === key) {
+                        this.sortAsc = !this.sortAsc;
+                    } else {
+                        this.sortKey = key;
+                        this.sortAsc = true;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
